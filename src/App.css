@@ -1,38 +1,66 @@
-.App {
-  text-align: center;
+#app {
+  padding: 10px;
+  display: grid;
+  grid-gap: 10px;
+  grid-template-columns: 200px 1fr;
+  grid-template-rows: max-content 1fr;
+  width: calc(100% - 30px);
+  height: calc(100% - 20px);
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
+#header {
+  background-color: midnightblue;
   color: white;
+  grid-row: 1;
+  grid-column: 1 / -1;
+  padding: 10px;
+  border-radius: 10px;
 }
 
-.App-link {
-  color: #61dafb;
+#header h1 {
+  margin: 0;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+#rooms {
+  border: 1px solid;
+  border-radius: 10px;
+  padding: 10px;
+}
+
+#rooms h2 {
+  margin: 0;
+}
+
+#messages {
+  display: grid;
+  border: 1px solid;
+  border-radius: 10px;
+  padding: 10px;
+  grid-template-columns: 1fr;
+  grid-template-rows: 40px 1fr 30px;
+}
+
+#events p {
+  margin-block-start: 0;
+  margin-block-end: 0.5em;
+}
+
+#messages h2 {
+  margin: 0;
+}
+
+.selected-room {
+  color: blue;
+}
+
+.send-window {
+  display: flex;
+}
+
+.user-id {
+  width: 100px;
+}
+
+.message-text {
+  flex-grow: 1;
 }
