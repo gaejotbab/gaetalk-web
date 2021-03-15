@@ -1,25 +1,9 @@
-import React, {useEffect, useState} from 'react';
-import firebase from 'firebase/app';
-import 'firebase/analytics';
-import 'firebase/firestore';
+import React, {useEffect, useLayoutEffect, useRef, useState} from 'react';
+import moment from 'moment';
+
+import firebase from './firebase';
 
 import './App.css';
-
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyC17JfGlIYgic4alZQwJQ3w0d0DWEYNscY",
-  authDomain: "gaetalk-dc0e6.firebaseapp.com",
-  projectId: "gaetalk-dc0e6",
-  storageBucket: "gaetalk-dc0e6.appspot.com",
-  messagingSenderId: "578915040528",
-  appId: "1:578915040528:web:f918b42994b3d624a7f995",
-  measurementId: "G-51M0NSBK9H"
-};
-
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);
-firebase.analytics();
 
 const db = firebase.firestore();
 
@@ -30,19 +14,20 @@ const Rooms: React.FunctionComponent<any> = ({rooms, setRooms, selectedRoom, set
     };
 
     return (
-        <button
-            key={room.id}
-            className={room === selectedRoom ? 'selected-room' : undefined}
-            onClick={handleRoomClick}
-        >
-          {room.id}
-        </button>
+        <div key={room.id}>
+          <button
+              className={room === selectedRoom ? 'selected-room' : undefined}
+              onClick={handleRoomClick}
+          >
+            {room.id}
+          </button>
+        </div>
     );
   });
 
   return (
     <div id="rooms">
-      <h2>Rooms</h2>
+      <h2>대화방</h2>
       <div>
         {renderedRooms}
       </div>
@@ -52,32 +37,56 @@ const Rooms: React.FunctionComponent<any> = ({rooms, setRooms, selectedRoom, set
 
 const Messages: React.FunctionComponent<any> = ({selectedRoom}) => {
   const [events, setEvents] = useState<any[]>([]);
+
   const [userId, setUserId] = useState<string>('');
   const [messageText, setMessageText] = useState<string>('');
 
-  const eventsPath = selectedRoom ? `rooms/${selectedRoom.id}/events` : '';
+  const newEventsRef = useRef<any[]>([]);
+  const counterRef = useRef(0);
+  const [counter, setCounter] = useState(0);
+
+  const eventsElementRef = useRef<HTMLDivElement>(null);
+  const messageTextInputElementRef = useRef<HTMLInputElement>(null);
+
+  const eventsPath = `rooms/${selectedRoom.id}/events`;
 
   useEffect(() => {
-    if (!selectedRoom) {
-      return;
+    let query: firebase.firestore.Query<firebase.firestore.DocumentData> = db.collection(eventsPath);
+
+    {
+      const since = moment().subtract(60, 'minutes').toDate();
+      query = query.where('createdAt', '>=', since);
     }
 
-    db.collection(eventsPath).orderBy('createdAt').get().then(querySnapshot => {
-      const events: any[] = [];
-      querySnapshot.forEach(doc => {
-        // XXX
-        const event = {...doc.data()};
-        events.push(event);
+    const unsubscribe = query.orderBy('createdAt').onSnapshot(querySnapshot => {
+      querySnapshot.docChanges().forEach((change) => {
+        if (change.type === 'added') {
+          // XXX
+          const event = {...change.doc.data(), id: change.doc.id};
+          newEventsRef.current.push(event);
+          ++counterRef.current;
+          setCounter(counterRef.current);
+          console.log(event);
+        }
       });
-      setEvents(events);
     });
-  }, [selectedRoom]);
+
+    return unsubscribe;
+  }, [selectedRoom, eventsPath]);
+
+  useEffect(() => {
+    if (newEventsRef.current.length === 0) {
+      return;
+    }
+    setEvents([...events, ...newEventsRef.current]);
+    newEventsRef.current = [];
+  }, [counter, events]);
 
   const renderedEvents = events.map(event => {
     let rendered;
     switch (event.type) {
-      case 'userEnter':
-        rendered = <p key={event.id}><strong>{event.userId}</strong> has entered the room.</p>;
+      case 'userEntered':
+        rendered = <p key={event.id}><strong>{event.userId}</strong> 님이 입장하셨습니다.</p>;
         break;
       case 'message':
         rendered = <p key={event.id}><strong>{event.userId}</strong>: {event.messageText}</p>;
@@ -90,12 +99,67 @@ const Messages: React.FunctionComponent<any> = ({selectedRoom}) => {
 
   const sendMessage = () => {
     if (!userId) {
-      window.alert('No userId.');
+      window.alert('유저 Id가 없습니다.');
+      return;
+    }
+
+    if (userId.length > 16) {
+      window.alert('유저 Id가 너무 깁니다. 16자 이하로 해주세요.');
+      return;
+    }
+
+    const codeOf = (char: string) => {
+      return char.charCodeAt(0);
+    };
+
+    const isCharInRange = (char: string, rangeStart: string, rangeEnd: string) => {
+      const code = codeOf(char);
+      return codeOf(rangeStart) <= code && code <= codeOf(rangeEnd);
+    };
+
+    const validateUserIdChar = (char: string) => {
+      return isCharInRange(char, '0', '9')
+          || isCharInRange(char, 'A', 'Z')
+          || isCharInRange(char, 'a', 'z')
+          || isCharInRange(char, '\uAC00', '\uD7AF')
+          || isCharInRange(char, '\u1100', '\u11FF')
+          || isCharInRange(char, '\uA960', '\uA97C')
+          || isCharInRange(char, '\uD7B0', '\uD7C6')
+          || isCharInRange(char, '\uD7CB', '\uD7FB')
+          || isCharInRange(char, '\u3131', '\u3163')
+          || isCharInRange(char, '\u3165', '\u318E')
+          || char === '.' || char === '-' || char === '_';
+    }
+
+    const validateUserId = (userId: string) => {
+      for (const char of userId) {
+        if (!validateUserIdChar(char)) {
+          return false;
+        }
+      }
+      return true;
+    };
+
+    if (!validateUserId(userId)) {
+      window.alert('유저 Id에 허용되지 않는 문자가 포함되어 있습니다.');
+      return;
+    }
+
+    if (userId.includes('gaejotbab') || userId.includes('개좆밥')) {
+      window.alert('사용이 불가능한 유저 Id입니다.');
       return;
     }
 
     if (!messageText) {
-      window.alert('No messageText.');
+      return;
+    }
+
+    if (!messageText.trim()) {
+      return;
+    }
+
+    if (messageText.length > 1024) {
+      window.alert('메시지가 너무 깁니다.');
       return;
     }
 
@@ -106,13 +170,46 @@ const Messages: React.FunctionComponent<any> = ({selectedRoom}) => {
       messageText: messageText,
       createdAt: new Date(),
     };
-    db.collection(eventsPath).doc().set(event);
+
+    db.collection(eventsPath).doc().set(event).then(value => {
+      messageTextInputElementRef.current?.focus();
+      setMessageText('');
+    });
+  };
+
+  const handleMessageTextEnter = (event: any) => {
+    if (event.keyCode === 13) {
+      event.preventDefault();
+      document.getElementById('send-message-button')?.click();
+    }
+  };
+
+  const [tailing, setTailing] = useState(true);
+
+  useLayoutEffect(() => {
+    const eventsDiv = eventsElementRef.current;
+    if (eventsDiv == null) {
+      return;
+    }
+
+    if (tailing) {
+      eventsDiv.scrollTop = eventsDiv.scrollHeight - eventsDiv.clientHeight;
+    }
+  });
+
+  const handleScrollEvents = (event: React.UIEvent) => {
+    const eventsDiv = eventsElementRef.current;
+    if (eventsDiv == null) {
+      return;
+    }
+
+    setTailing(eventsDiv.scrollHeight - eventsDiv.clientHeight - 5 <= eventsDiv.scrollTop);
   };
 
   return (
       <div id="messages">
-        {selectedRoom ? <h2>Messages ({selectedRoom.id})</h2> : <h2>Messages</h2>}
-        <div id="events">
+        <h2>대화 ({selectedRoom.id})</h2>
+        <div id="events" ref={eventsElementRef} onScroll={handleScrollEvents}>
           {renderedEvents}
         </div>
         <div className="send-window">
@@ -122,15 +219,24 @@ const Messages: React.FunctionComponent<any> = ({selectedRoom}) => {
               name="userId"
               value={userId}
               onChange={event => {setUserId(event.target.value)}}
+              placeholder="유저 Id"
+              maxLength={16}
+              autoComplete="off"
           />
           <input
+              ref={messageTextInputElementRef}
+              id="message-text"
               className="message-text"
               type="text"
               name="messageText"
               value={messageText}
               onChange={event => {setMessageText(event.target.value)}}
+              onKeyUp={handleMessageTextEnter}
+              placeholder="메시지"
+              maxLength={1024}
+              autoComplete="off"
           />
-          <button onClick={sendMessage}>Send</button>
+          <button id="send-message-button" onClick={sendMessage}>보내기</button>
         </div>
       </div>
   );
@@ -153,10 +259,25 @@ function App() {
     });
   }, []);
 
+  let renderedMessages;
+  if (selectedRoom) {
+    renderedMessages = (
+        <Messages
+            selectedRoom={selectedRoom}
+        />
+    );
+  } else {
+    renderedMessages = (
+        <div id="messages-with-no-selected-room">
+          <div>방을 선택하세요.</div>
+        </div>
+    );
+  }
+
   return (
     <div id="app">
       <div id="header">
-        <h1>Gaetalk!</h1>
+        <h1>개톡</h1>
       </div>
       <Rooms
           rooms={rooms}
@@ -164,9 +285,7 @@ function App() {
           selectedRoom={selectedRoom}
           setSelectedRoom={setSelectedRoom}
       />
-      <Messages
-          selectedRoom={selectedRoom}
-      />
+      {renderedMessages}
     </div>
   );
 }
