@@ -45,8 +45,18 @@
   overflow-y: hidden;
 }
 
-#messages h2 {
+#messages-header {
+  display: flex;
+  align-items: center;
   margin: 0 0 10px 0;
+}
+
+#messages-header h2 {
+  margin: 0;
+}
+
+#messages-control-panel {
+  margin-left: auto;
 }
 
 #messages-with-no-selected-room {

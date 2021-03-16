@@ -50,15 +50,13 @@ const Messages: React.FunctionComponent<any> = ({selectedRoom}) => {
 
   const eventsPath = `rooms/${selectedRoom.id}/events`;
 
+  const [showCreatedAt, setShowCreatedAt] = useState<boolean>(true);
+
   useEffect(() => {
-    let query: firebase.firestore.Query<firebase.firestore.DocumentData> = db.collection(eventsPath);
-
-    {
-      const since = moment().subtract(60, 'minutes').toDate();
-      query = query.where('createdAt', '>=', since);
-    }
-
-    const unsubscribe = query.orderBy('createdAt').onSnapshot(querySnapshot => {
+    const unsubscribe = db.collection(eventsPath)
+        .orderBy('createdAt')
+        .limitToLast(50)
+        .onSnapshot(querySnapshot => {
       querySnapshot.docChanges().forEach((change) => {
         if (change.type === 'added') {
           // XXX
@@ -66,12 +64,16 @@ const Messages: React.FunctionComponent<any> = ({selectedRoom}) => {
           newEventsRef.current.push(event);
           ++counterRef.current;
           setCounter(counterRef.current);
-          console.log(event);
         }
       });
     });
 
-    return unsubscribe;
+    const unsubscribeAndClearEvents = () => {
+      unsubscribe();
+      setEvents([]);
+    };
+
+    return unsubscribeAndClearEvents;
   }, [selectedRoom, eventsPath]);
 
   useEffect(() => {
@@ -83,13 +85,17 @@ const Messages: React.FunctionComponent<any> = ({selectedRoom}) => {
   }, [counter, events]);
 
   const renderedEvents = events.map(event => {
+    const createdAt = moment(event.createdAt.toDate())
+        .format('YYYY-MM-DD HH:mm:ss');
+    const renderedCreatedAt = <span>[{createdAt}]</span>;
+
     let rendered;
     switch (event.type) {
       case 'userEntered':
-        rendered = <p key={event.id}><strong>{event.userId}</strong> 님이 입장하셨습니다.</p>;
+        rendered = <p key={event.id}>{showCreatedAt && renderedCreatedAt} <strong>{event.userId}</strong> 님이 입장하셨습니다.</p>;
         break;
       case 'message':
-        rendered = <p key={event.id}><strong>{event.userId}</strong>: {event.messageText}</p>;
+        rendered = <p key={event.id}>{showCreatedAt && renderedCreatedAt} <strong>{event.userId}</strong>: {event.messageText}</p>;
         break;
       default:
         break;
@@ -206,9 +212,30 @@ const Messages: React.FunctionComponent<any> = ({selectedRoom}) => {
     setTailing(eventsDiv.scrollHeight - eventsDiv.clientHeight - 5 <= eventsDiv.scrollTop);
   };
 
+  const handleShowCreatedAtChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target == null) {
+      return;
+    }
+    setShowCreatedAt(event.target.checked);
+  };
+
   return (
       <div id="messages">
-        <h2>대화 ({selectedRoom.id})</h2>
+        <div id="messages-header">
+          <h2>대화 ({selectedRoom.id})</h2>
+          <div id="messages-control-panel">
+            <label>
+              <input
+                  type="checkbox"
+                  name="showCreatedAt"
+                  checked={showCreatedAt}
+                  onChange={handleShowCreatedAtChange}
+                  style={{verticalAlign: 'baseline'}}
+              />
+              시간 보기
+            </label>
+          </div>
+        </div>
         <div id="events" ref={eventsElementRef} onScroll={handleScrollEvents}>
           {renderedEvents}
         </div>
