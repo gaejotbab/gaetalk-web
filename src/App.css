@@ -53,9 +53,13 @@
 
 #messages-header h2 {
   margin: 0;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 #messages-control-panel {
+  flex: none;
   margin-left: auto;
 }
 
@@ -75,6 +79,10 @@
 #events p {
   margin-block-start: 0;
   margin-block-end: 0.5em;
+}
+
+#events p:last-child {
+  margin-block-end: 0;
 }
 
 .selected-room {

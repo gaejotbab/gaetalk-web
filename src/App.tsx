@@ -85,17 +85,21 @@ const Messages: React.FunctionComponent<any> = ({selectedRoom}) => {
   }, [counter, events]);
 
   const renderedEvents = events.map(event => {
-    const createdAt = moment(event.createdAt.toDate())
-        .format('YYYY-MM-DD HH:mm:ss');
-    const renderedCreatedAt = <span>[{createdAt}]</span>;
+    let renderedCreatedAt = null;
+
+    if (showCreatedAt) {
+      const createdAt = moment(event.createdAt.toDate())
+          .format('YYYY-MM-DD HH:mm:ss');
+      renderedCreatedAt = <span>[{createdAt}]</span>;
+    }
 
     let rendered;
     switch (event.type) {
       case 'userEntered':
-        rendered = <p key={event.id}>{showCreatedAt && renderedCreatedAt} <strong>{event.userId}</strong> 님이 입장하셨습니다.</p>;
+        rendered = <p key={event.id}>{renderedCreatedAt} <strong>{event.userId}</strong> 님이 입장하셨습니다.</p>;
         break;
       case 'message':
-        rendered = <p key={event.id}>{showCreatedAt && renderedCreatedAt} <strong>{event.userId}</strong>: {event.messageText}</p>;
+        rendered = <p key={event.id}>{renderedCreatedAt} <strong>{event.userId}</strong>: {event.messageText}</p>;
         break;
       default:
         break;
