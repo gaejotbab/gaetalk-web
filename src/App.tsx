@@ -27,7 +27,7 @@ const Rooms: React.FunctionComponent<any> = ({rooms, setRooms, selectedRoom, set
 
   return (
     <div id="rooms">
-      <h2>대화방</h2>
+      <h3>대화방</h3>
       <div>
         {renderedRooms}
       </div>
@@ -226,7 +226,7 @@ const Messages: React.FunctionComponent<any> = ({selectedRoom}) => {
   return (
       <div id="messages">
         <div id="messages-header">
-          <h2>대화 ({selectedRoom.id})</h2>
+          <h3>대화 ({selectedRoom.id})</h3>
           <div id="messages-control-panel">
             <label>
               <input
@@ -308,7 +308,7 @@ function App() {
   return (
     <div id="app">
       <div id="header">
-        <h1>개톡</h1>
+        <h2>개톡</h2>
       </div>
       <Rooms
           rooms={rooms}
