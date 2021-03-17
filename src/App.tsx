@@ -273,6 +273,20 @@ const Messages: React.FunctionComponent<any> = ({selectedRoom}) => {
   );
 };
 
+const MessagesPanel: React.FunctionComponent<any> = ({selectedRoom}) => {
+  if (selectedRoom) {
+    return (
+        <Messages selectedRoom={selectedRoom} />
+    );
+  } else {
+    return (
+        <div id="messages-with-no-selected-room">
+          <div>방을 선택하세요.</div>
+        </div>
+    );
+  }
+};
+
 function App() {
   const [rooms, setRooms] = useState<any[]>([]);
   const [selectedRoom, setSelectedRoom] = useState<any>(null);
@@ -290,21 +304,6 @@ function App() {
     });
   }, []);
 
-  let renderedMessages;
-  if (selectedRoom) {
-    renderedMessages = (
-        <Messages
-            selectedRoom={selectedRoom}
-        />
-    );
-  } else {
-    renderedMessages = (
-        <div id="messages-with-no-selected-room">
-          <div>방을 선택하세요.</div>
-        </div>
-    );
-  }
-
   return (
     <div id="app">
       <div id="header">
@@ -316,7 +315,7 @@ function App() {
           selectedRoom={selectedRoom}
           setSelectedRoom={setSelectedRoom}
       />
-      {renderedMessages}
+      <MessagesPanel selectedRoom={selectedRoom} />
     </div>
   );
 }
