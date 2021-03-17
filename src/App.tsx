@@ -58,7 +58,7 @@ const Messages: React.FunctionComponent<any> = ({selectedRoom}) => {
         .limitToLast(50)
         .onSnapshot(querySnapshot => {
       querySnapshot.docChanges().forEach((change) => {
-        if (change.type === 'added') {
+        if ((change.type === 'added' && change.doc.data().createdAt) || change.type === 'modified') {
           // XXX
           const event = {...change.doc.data(), id: change.doc.id};
           newEventsRef.current.push(event);
@@ -178,7 +178,7 @@ const Messages: React.FunctionComponent<any> = ({selectedRoom}) => {
       type: 'message',
       messageType: 'text',
       messageText: messageText,
-      createdAt: new Date(),
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
     };
 
     db.collection(eventsPath).doc().set(event).then(value => {
