@@ -138,6 +138,10 @@ const Messages: React.FunctionComponent<any> = ({selectedRoom}) => {
           || isCharInRange(char, '\uD7CB', '\uD7FB')
           || isCharInRange(char, '\u3131', '\u3163')
           || isCharInRange(char, '\u3165', '\u318E')
+          || isCharInRange(char, '\u3041', '\u309f') // Hiragana
+          || isCharInRange(char, '\u30a0', '\u30ff') // Katakana
+          || isCharInRange(char, '\u4e00', '\u9fff') // CJK Unified Ideographs
+          || isCharInRange(char, '\u3400', '\u4dbf') // CJK Unified Ideographs Extension A
           || char === '.' || char === '-' || char === '_';
     }
 
