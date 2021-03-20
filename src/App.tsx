@@ -47,6 +47,7 @@ const Messages: React.FunctionComponent<any> = ({selectedRoom}) => {
 
   const eventsElementRef = useRef<HTMLDivElement>(null);
   const messageTextInputElementRef = useRef<HTMLInputElement>(null);
+  const sendMessageButtonElementRef = useRef<HTMLButtonElement>(null);
 
   const eventsPath = `rooms/${selectedRoom.id}/events`;
 
@@ -192,9 +193,8 @@ const Messages: React.FunctionComponent<any> = ({selectedRoom}) => {
   };
 
   const handleMessageTextEnter = (event: any) => {
-    if (event.keyCode === 13) {
-      event.preventDefault();
-      document.getElementById('send-message-button')?.click();
+    if (event.key === 'Enter') {
+      sendMessageButtonElementRef.current?.click();
     }
   };
 
@@ -271,7 +271,13 @@ const Messages: React.FunctionComponent<any> = ({selectedRoom}) => {
               maxLength={1024}
               autoComplete="off"
           />
-          <button id="send-message-button" onClick={sendMessage}>보내기</button>
+          <button
+              ref={sendMessageButtonElementRef}
+              id="send-message-button"
+              onClick={sendMessage}
+          >
+            보내기
+          </button>
         </div>
       </div>
   );
