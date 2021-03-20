@@ -96,8 +96,14 @@
   column-gap: 5px;
 }
 
-.user-id {
+#user-id {
   width: 100px;
+}
+
+.user-id-invalid {
+  border-color: red;
+  outline-color: red;
+  border-style: solid;
 }
 
 .message-text {

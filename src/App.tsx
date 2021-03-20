@@ -35,6 +35,60 @@ const Rooms: React.FunctionComponent<any> = ({rooms, setRooms, selectedRoom, set
   );
 };
 
+const codeOf = (char: string) => {
+  return char.charCodeAt(0);
+};
+
+const isCharInRange = (char: string, rangeStart: string, rangeEnd: string) => {
+  const code = codeOf(char);
+  return codeOf(rangeStart) <= code && code <= codeOf(rangeEnd);
+};
+
+const validateUserId = (userId: string) => {
+  if (!userId) {
+    throw '유저 Id가 없습니다.';
+  }
+
+  if (userId.length > 16) {
+    throw '유저 Id가 너무 깁니다. 16자 이하로 해주세요.';
+  }
+
+  const validateChar = (char: string) => {
+    return isCharInRange(char, '0', '9')
+        || isCharInRange(char, 'A', 'Z')
+        || isCharInRange(char, 'a', 'z')
+        || isCharInRange(char, '\uAC00', '\uD7AF')
+        || isCharInRange(char, '\u1100', '\u11FF')
+        || isCharInRange(char, '\uA960', '\uA97C')
+        || isCharInRange(char, '\uD7B0', '\uD7C6')
+        || isCharInRange(char, '\uD7CB', '\uD7FB')
+        || isCharInRange(char, '\u3131', '\u3163')
+        || isCharInRange(char, '\u3165', '\u318E')
+        || isCharInRange(char, '\u3041', '\u309f') // Hiragana
+        || isCharInRange(char, '\u30a0', '\u30ff') // Katakana
+        || isCharInRange(char, '\u4e00', '\u9fff') // CJK Unified Ideographs
+        || isCharInRange(char, '\u3400', '\u4dbf') // CJK Unified Ideographs Extension A
+        || char === '.' || char === '-' || char === '_';
+  }
+
+  const validateContent = (userId: string) => {
+    for (const char of userId) {
+      if (!validateChar(char)) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  if (!validateContent(userId)) {
+    throw '유저 Id에 허용되지 않는 문자가 포함되어 있습니다.';
+  }
+
+  if (userId.includes('gaejotbab') || userId.includes('개좆밥')) {
+    throw '사용이 불가능한 유저 Id입니다.';
+  }
+};
+
 const Messages: React.FunctionComponent<any> = ({selectedRoom}) => {
   const [events, setEvents] = useState<any[]>([]);
 
@@ -52,6 +106,18 @@ const Messages: React.FunctionComponent<any> = ({selectedRoom}) => {
   const eventsPath = `rooms/${selectedRoom.id}/events`;
 
   const [showCreatedAt, setShowCreatedAt] = useState<boolean>(true);
+
+  useEffect(() => {
+    try {
+      const storedUserId = localStorage.getItem('userId');
+      if (storedUserId === null) {
+        return;
+      }
+      setUserId(storedUserId);
+    } catch (e) {
+      // Ignore
+    }
+  }, []);
 
   useEffect(() => {
     const unsubscribe = db.collection(eventsPath)
@@ -109,59 +175,10 @@ const Messages: React.FunctionComponent<any> = ({selectedRoom}) => {
   });
 
   const sendMessage = () => {
-    if (!userId) {
-      window.alert('유저 Id가 없습니다.');
-      return;
-    }
-
-    if (userId.length > 16) {
-      window.alert('유저 Id가 너무 깁니다. 16자 이하로 해주세요.');
-      return;
-    }
-
-    const codeOf = (char: string) => {
-      return char.charCodeAt(0);
-    };
-
-    const isCharInRange = (char: string, rangeStart: string, rangeEnd: string) => {
-      const code = codeOf(char);
-      return codeOf(rangeStart) <= code && code <= codeOf(rangeEnd);
-    };
-
-    const validateUserIdChar = (char: string) => {
-      return isCharInRange(char, '0', '9')
-          || isCharInRange(char, 'A', 'Z')
-          || isCharInRange(char, 'a', 'z')
-          || isCharInRange(char, '\uAC00', '\uD7AF')
-          || isCharInRange(char, '\u1100', '\u11FF')
-          || isCharInRange(char, '\uA960', '\uA97C')
-          || isCharInRange(char, '\uD7B0', '\uD7C6')
-          || isCharInRange(char, '\uD7CB', '\uD7FB')
-          || isCharInRange(char, '\u3131', '\u3163')
-          || isCharInRange(char, '\u3165', '\u318E')
-          || isCharInRange(char, '\u3041', '\u309f') // Hiragana
-          || isCharInRange(char, '\u30a0', '\u30ff') // Katakana
-          || isCharInRange(char, '\u4e00', '\u9fff') // CJK Unified Ideographs
-          || isCharInRange(char, '\u3400', '\u4dbf') // CJK Unified Ideographs Extension A
-          || char === '.' || char === '-' || char === '_';
-    }
-
-    const validateUserId = (userId: string) => {
-      for (const char of userId) {
-        if (!validateUserIdChar(char)) {
-          return false;
-        }
-      }
-      return true;
-    };
-
-    if (!validateUserId(userId)) {
-      window.alert('유저 Id에 허용되지 않는 문자가 포함되어 있습니다.');
-      return;
-    }
-
-    if (userId.includes('gaejotbab') || userId.includes('개좆밥')) {
-      window.alert('사용이 불가능한 유저 Id입니다.');
+    try {
+      validateUserId(userId);
+    } catch (e) {
+      alert(e);
       return;
     }
 
@@ -227,6 +244,24 @@ const Messages: React.FunctionComponent<any> = ({selectedRoom}) => {
     setShowCreatedAt(event.target.checked);
   };
 
+  const handleUserIdChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const userId = event.target.value;
+    setUserId(userId);
+    try {
+      localStorage.setItem('userId', userId);
+    } catch (e) {
+      // Ignore
+    }
+  };
+
+  let validUserId = false;
+  try {
+    validateUserId(userId);
+    validUserId = true;
+  } catch (e) {
+    // Ignore
+  }
+
   return (
       <div id="messages">
         <div id="messages-header">
@@ -249,11 +284,12 @@ const Messages: React.FunctionComponent<any> = ({selectedRoom}) => {
         </div>
         <div className="send-window">
           <input
-              className="user-id"
+              id="user-id"
+              className={!userId || validUserId ? undefined : 'user-id-invalid'}
               type="text"
               name="userId"
               value={userId}
-              onChange={event => {setUserId(event.target.value)}}
+              onChange={handleUserIdChange}
               placeholder="유저 Id"
               maxLength={16}
               autoComplete="off"
