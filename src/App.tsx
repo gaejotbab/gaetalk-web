@@ -174,38 +174,59 @@ const Messages: React.FunctionComponent<any> = ({selectedRoom}) => {
     return rendered;
   });
 
+  const sendingMessage = useRef(false);
+
   const sendMessage = () => {
+    if (sendingMessage.current) {
+      return;
+    }
+
+    sendingMessage.current = true;
+
     try {
       validateUserId(userId);
     } catch (e) {
       alert(e);
+      sendingMessage.current = false;
       return;
     }
 
     if (!messageText) {
+      sendingMessage.current = false;
       return;
     }
 
     if (!messageText.trim()) {
+      sendingMessage.current = false;
       return;
     }
 
     if (messageText.length > 1024) {
       window.alert('메시지가 너무 깁니다.');
+      sendingMessage.current = false;
       return;
     }
 
-    const event = {
-      userId: userId,
-      type: 'message',
-      messageType: 'text',
-      messageText: messageText,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-    };
+    let event;
+    try {
+      event = {
+        userId: userId,
+        type: 'message',
+        messageType: 'text',
+        messageText: messageText,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      };
+    } catch (e) {
+      sendingMessage.current = false;
+      return;
+    }
 
     db.collection(eventsPath).doc().set(event).then(value => {
       messageTextInputElementRef.current?.focus();
       setMessageText('');
+      sendingMessage.current = false;
+    }).catch(reason => {
+      sendingMessage.current = false;
     });
   };
 
