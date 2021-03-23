@@ -84,7 +84,7 @@ const validateUserId = (userId: string) => {
     throw '유저 Id에 허용되지 않는 문자가 포함되어 있습니다.';
   }
 
-  if (userId.includes('gaejotbab') || userId.includes('개좆밥')) {
+  if (userId.toLowerCase().includes('gaejotbab') || userId.includes('개좆밥')) {
     throw '사용이 불가능한 유저 Id입니다.';
   }
 };
